@@ -11,6 +11,7 @@ AS3 local RTMFP connections library
 
 ### Usage
 
+```
 
 // ---------- init ------------//
 
@@ -42,3 +43,4 @@ function messageReceived(p:P2PPacket):void{
 
 p2p_client.send(data, type(="default"), system (=true), recipient(="");
 
+```
