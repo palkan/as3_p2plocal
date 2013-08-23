@@ -41,3 +41,4 @@ function messageReceived(p:P2PPacket):void{
 //------------ send messages ----------//
 
 p2p_client.send(data, type(="default"), system (=true), recipient(="");
+
