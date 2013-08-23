@@ -1,0 +1,186 @@
+<?xml version="1.0"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" creationComplete="setupConnection()">
+    <fx:Script><![CDATA[
+        import com.greygreen.net.p2p.P2PClient;
+        import com.greygreen.net.p2p.events.P2PEvent;
+        import com.greygreen.net.p2p.model.P2PConfig;
+        import com.greygreen.net.p2p.model.P2PPacket;
+
+        import mx.collections.ArrayCollection;
+
+        import ru.teachbase.utils.shortcuts.debug;
+
+        private const p2pclient:P2PClient = new P2PClient();
+
+        /**
+         *  User to chat mapping (use peerID as a key or 'all' keyword for public chat)
+         */
+        private var _storage:Object = {
+            "all": {label: "all", peerID: "all", text: ""}
+        }
+
+        private var _currentChat:String = "all";
+
+        private var _my_name:String = "chatter-box-" + Math.floor(1000 * Math.random());
+
+
+        [Bindable]
+        private var _listProvider:ArrayCollection = new ArrayCollection();
+
+        private function setupConnection():void {
+
+            p2pclient.addEventListener(P2PEvent.FAILED, onFailure);
+            p2pclient.addEventListener(P2PEvent.CONNECTED, onConnect);
+            p2pclient.addEventListener(P2PEvent.STATE_RESTORED, onStateRestored);
+            p2pclient.addEventListener(P2PEvent.STATE_RESTORE_FAILED, onFailure);
+            p2pclient.addEventListener(P2PEvent.PEER_CONNECTED, userJoin);
+            p2pclient.addEventListener(P2PEvent.PEER_DISCONNECTED, userLeave);
+
+            p2pclient.listen(messageReceived, "message");
+
+            p2pclient.listen(userRegister, "user");
+
+            p2pclient.connect(new P2PConfig({
+                groupName: "p2p/chat/1",
+                saveState: "true"
+            }));
+
+        }
+
+        private function userJoin(e:P2PEvent):void {
+            if (!_storage[e.info.peerID]) {  // we have't received user registration
+                _storage[e.info.peerID] = {peerID: e.info.peerID, text: ""};
+            } else { // we've already received user info (obviously on restore state); than add to list
+                _listProvider.addItem(_storage[e.info.peerID]);
+            }
+        }
+
+        private function userLeave(e:P2PEvent):void {
+            if (_storage[e.info.peerID]) {
+
+                _listProvider.getItemIndex(_storage[e.info.peerID]) > -1 && _listProvider.removeItemAt(_listProvider.getItemIndex(_storage[e.info.peerID]));
+
+                delete _storage[e.info.peerID];
+
+                if (_currentChat == e.info.peerID) switchTo("all");
+
+            }
+        }
+
+        private function onStateRestored(e:P2PEvent):void {
+
+            restoreFromArray(e.info.state);
+
+            p2pclient.receive = true;
+
+            push_btn.enabled = true;
+
+            switchTo("all");
+
+            p2pclient.send({label: _my_name, peerID: p2pclient.peerID}, "user");
+
+        }
+
+        private function onConnect(e:P2PEvent):void {
+
+            debug('P2P connection established');
+
+            _listProvider.addItem(_storage["all"]);
+
+        }
+
+        private function onFailure(e:P2PEvent):void {
+            debug('P2P connection failed');
+        }
+
+
+        private function userRegister(p:P2PPacket):void {
+
+            if (!_storage[p.senderId]) {
+                _storage[p.data.peerID] = {peerID: p.data.peerID, text: ""};
+
+                // we must ensure that user is really connected so waiting for PEER_CONNECT
+
+            } else {
+
+                _storage[p.senderId]["label"] = p.data.label;
+
+                _listProvider.addItem(_storage[p.senderId]);
+            }
+        }
+
+        private function messageReceived(p:P2PPacket):void {
+
+            if (p.data.chat != "all" && !_storage[p.senderId]) return;
+
+            const message:String = p.data.name + ": " + p.data.text + "\n";
+
+            if(p.data.chat == "all") _storage["all"]["text"] += message;
+            else    _storage[p.senderId]["text"] += message;
+
+            if (
+                    (p.senderId == _currentChat) ||  // private chat: compare sender with current
+                    (p.data.chat == _currentChat)    // it is possible only if _currentChat == "all"
+                    )
+                textArea.text += message;
+
+        }
+
+
+        private function restoreFromArray(arr:Array):void {
+
+            for each(var p:P2PPacket in arr) {
+                if (p && p.type == "user") userRegister(p);
+                else if (p && p.type == "message") messageReceived(p);
+            }
+
+        }
+
+
+        private function switchTo(id:String):void {
+
+            if (!_storage[id]) return;
+
+            textArea.text = _storage[id]["text"];
+
+            title.text = _storage[id]['label'];
+
+            _currentChat = id;
+
+        }
+
+        private function push():void {
+
+            if (!inputField.text)  return;
+
+            p2pclient.send({chat: _currentChat, name: _my_name, text: inputField.text}, "message", _currentChat === "all", _currentChat === "all" ? "" : _currentChat);
+
+            _storage[_currentChat]["text"] += _my_name + ": " + inputField.text + "\n";
+
+            textArea.text += _my_name + ": " + inputField.text + "\n";
+
+            inputField.text = "";
+
+        }
+
+
+        private function listClick(e:Event):void {
+              switchTo(users.selectedItem.peerID);
+        }
+        ]]></fx:Script>
+    <s:HGroup width="100%" height="100%">
+        <s:List id="users" width="150" height="100%" click="listClick(event)" dataProvider="{_listProvider}">
+
+        </s:List>
+        <s:VGroup width="100%" height="100%" right="0" left="155">
+        <s:Label height="30" id="title" width="100%"/>
+        <s:TextArea width="100%" height="100%" top="30" bottom="30" id="textArea">
+
+        </s:TextArea>
+        <s:HGroup width="100%" height="30">
+            <s:TextInput id="inputField" width="100%" right="50" left="0" enter="push()"></s:TextInput>
+            <s:Button id="push_btn" label="push" width="50" click="push()" enabled="false"/>
+        </s:HGroup>
+        </s:VGroup>
+    </s:HGroup>
+</s:Application>

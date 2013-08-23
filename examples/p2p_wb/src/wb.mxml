@@ -1,0 +1,138 @@
+<?xml version="1.0"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+               xmlns:board="ru.teachbase.components.board.*"
+               creationComplete="init()">
+
+    <fx:Script><![CDATA[
+        import com.greygreen.net.p2p.P2PClient;
+        import com.greygreen.net.p2p.events.P2PEvent;
+        import com.greygreen.net.p2p.model.P2PConfig;
+        import com.greygreen.net.p2p.model.P2PPacket;
+
+        import ru.teachbase.components.board.FigureManager;
+        import ru.teachbase.components.board.instruments.InstrumentType;
+        import ru.teachbase.components.board.model.SimpleBoardClient;
+        import ru.teachbase.utils.shortcuts.debug;
+
+        private var _board_mgr:SimpleBoardClient;
+        private var _mgr:FigureManager;
+
+        private const p2pclient:P2PClient = new P2PClient();
+
+        private function init():void {
+            _mgr = new FigureManager();
+            _mgr.initialize(canvas);
+            _mgr.disable();
+
+
+            setupConnection();
+
+            _board_mgr = new SimpleBoardClient(boardConnect, boardData);
+
+            _mgr.setExternal(_board_mgr);
+        }
+
+
+        public function boardConnect(mgr:FigureManager):void {
+
+            _mgr = mgr;
+
+        }
+
+        public function boardData(data:Array):void {
+
+            if (!p2pclient || !p2pclient.connected) return;
+
+            p2pclient.send(data,"wb");
+
+        }
+
+
+        public function messageReceived(p:P2PPacket):void {
+
+            _mgr && _mgr.receiveExternalData(p.data);
+
+        }
+
+
+        private function setupConnection():void {
+
+            p2pclient.addEventListener(P2PEvent.FAILED, onFailure);
+            p2pclient.addEventListener(P2PEvent.CONNECTED, onConnect);
+            p2pclient.addEventListener(P2PEvent.STATE_RESTORED, onStateRestored);
+            p2pclient.addEventListener(P2PEvent.STATE_RESTORE_FAILED, onFailure);
+
+            p2pclient.listen(messageReceived,"wb");
+
+            p2pclient.connect(new P2PConfig({
+                groupName: "p2p/wb/1",
+                saveState: "true"
+            }));
+
+        }
+
+        private function onStateRestored(e:P2PEvent):void {
+
+            _mgr.receiveExternalData((e.info.state as Array).map(
+                    function (p:P2PPacket, ...args):Object {
+                        return (p.data as Array)[0];
+                    }
+            ));
+
+            _mgr.enable();
+            tools.visible = true;
+
+            p2pclient.receive = true;
+
+
+        }
+
+        private function onConnect(e:P2PEvent):void {
+
+            debug('P2P connection established');
+            canvas.visible = true;
+
+        }
+
+        private function onFailure(e:P2PEvent):void {
+
+            debug('P2P connection failed');
+
+            canvas.visible = false;
+            tools.visible = false;
+
+        }
+        ]]></fx:Script>
+
+    <s:Group width="100%"
+             height="100%"
+             id="main"
+            >
+
+        <!--canvas-->
+        <board:BoardCanvas id="canvas"
+                           width="{main.width}"
+                           height="{main.height}"
+                           backgroundColor="0xf1f1f1"
+                           visible="false"
+                />
+        <s:HGroup id="tools" gap="10" visible="false">
+            <s:HGroup>
+                <s:Button label="pencil" click="_mgr.setInstrument(InstrumentType.PENCIL);"/>
+                <s:Button label="pointer" click="_mgr.setInstrument(InstrumentType.POINTER);"/>
+                <s:Button label="rect" click="_mgr.setInstrument(InstrumentType.RECTANGLE);"/>
+                <s:Button label="eraser" click="_mgr.setInstrument(InstrumentType.ERASER);"/>
+                <s:Button label="text" click="_mgr.setInstrument(InstrumentType.TEXT);"/>
+            </s:HGroup>
+            <s:HGroup>
+                <s:Button label="color" click="_mgr.setStyle('color',0xfdfdfd * Math.random());"/>
+            </s:HGroup>
+            <s:HGroup>
+                <s:Button label="undo" click="_mgr.undo();" enabled="{_mgr.history.undoAvailable}"/>
+                <s:Button label="redo" click="_mgr.redo();" enabled="{_mgr.history.redoAvailable}"/>
+            </s:HGroup>
+        </s:HGroup>
+
+    </s:Group>
+
+</s:Application>
