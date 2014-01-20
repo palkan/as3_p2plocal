@@ -20,7 +20,6 @@ import flash.utils.setTimeout;
 import ru.teachbase.constants.NetConnectionStatusCodes;
 import ru.teachbase.constants.NetGroupStatusCodes;
 import ru.teachbase.utils.extensions.FuncObject;
-import ru.teachbase.utils.shortcuts.debug;
 
 /**
  *  Dispatches when NetConnection and NetGroup successfully connected.
@@ -457,6 +456,12 @@ public class P2PClient extends EventDispatcher{
     public function get peerID():String{
         return _connected ? connection.nearID : "";
     }
+	
+	private function debug(s:String):void
+	{
+//		import ru.teachbase.utils.shortcuts.debug;
+		trace(s);
+	}
 
 }
 }

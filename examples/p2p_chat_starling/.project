@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>StarlingFeathersTest</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>com.adobe.flexbuilder.project.flexbuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>com.adobe.flexbuilder.project.apollobuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>com.adobe.flexide.project.multiplatform.multiplatformasnature</nature>
+		<nature>com.adobe.flexide.project.multiplatform.multiplatformnature</nature>
+		<nature>com.adobe.flexbuilder.project.apollonature</nature>
+		<nature>com.adobe.flexbuilder.project.actionscriptnature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>as3_p2plocal</name>
+			<type>2</type>
+			<locationURI>$%7BLIBRARY_LOC%7D/as3_p2plocal</locationURI>
+		</link>
+		<link>
+			<name>feathers</name>
+			<type>2</type>
+			<locationURI>$%7BLIBRARY_LOC%7D/feathers</locationURI>
+		</link>
+		<link>
+			<name>starling</name>
+			<type>2</type>
+			<locationURI>$%7BLIBRARY_LOC%7D/Starling-Framework</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>
