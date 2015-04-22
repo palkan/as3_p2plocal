@@ -11,7 +11,7 @@ AS3 local RTMFP connections library
 
 ### Usage
 
-```
+```actionscript
 
 // ---------- init ------------//
 
