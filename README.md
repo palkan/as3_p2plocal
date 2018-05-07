@@ -8,6 +8,7 @@ AS3 local RTMFP connections library
 * Direct routing (peer-to-peer send message)
 * Automatically restore session state (if there is at least one another peer in the group)
 
+Examples: [http://palkan.github.io/as3_p2plocal/examples/index.html](http://palkan.github.io/as3_p2plocal/examples/index.html)
 
 ### Usage
 
